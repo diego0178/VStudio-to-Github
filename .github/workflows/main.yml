@@ -11,24 +11,31 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      # 1. Clona el repositorio en el runner de GitHub
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Configura MSBuild en el entorno
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v1
 
+      # 3. Restaura los paquetes NuGet necesarios para compilar
       - name: Restore NuGet packages
         run: nuget restore aspnet-get-started.sln
 
+      # 4. Compila la solución en modo Release
       - name: Build solution in Release
         run: msbuild aspnet-get-started.sln /p:Configuration=Release
 
+      # 5. Empaqueta la app en un archivo ZIP en la carpeta de trabajo
       - name: Package web app
-        run: msbuild aspnet-get-started.sln /p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(Build.ArtifactStagingDirectory)\WebApp.zip" /p:Configuration=Release
+        run: msbuild aspnet-get-started.sln /p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="${{ github.workspace }}\WebApp.zip" /p:Configuration=Release
 
+      # 6. Despliega el paquete a Azure App Service
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: myAppVsc
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: $(Build.ArtifactStagingDirectory)\WebApp.zip
+          app-name: myAppVsc # Nombre de tu App Service en Azure
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }} # Guardado en GitHub Secrets
+          package: ${{ github.workspace }}\WebApp.zip
+
