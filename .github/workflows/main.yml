@@ -20,26 +20,26 @@ jobs:
       - name: Restore NuGet packages
         run: nuget restore aspnet-get-started.sln
 
-      - name: Clean publish folder
-        run: |
-          if (Test-Path "${{ github.workspace }}\publish") {
-            Remove-Item "${{ github.workspace }}\publish" -Recurse -Force
-          }
-
       - name: Build and publish web project
-        run: msbuild aspnet-get-started/aspnet-get-started.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:PublishUrl="${{ github.workspace }}\publish"
+        run: msbuild "aspnet-get-started/aspnet-get-started.csproj" ^
+          /p:Configuration=Release ^
+          /p:DeployOnBuild=true ^
+          /p:WebPublishMethod=FileSystem ^
+          /p:PublishUrl="${{ github.workspace }}/publish"
 
-      - name: Check publish output
+      - name: List publish folder
+        run: dir "${{ github.workspace }}/publish"
+
+      - name: Check for web.config
         run: |
-          if (-not (Test-Path "${{ github.workspace }}\publish\web.config")) {
+          if (-not (Test-Path "${{ github.workspace }}/publish/web.config")) {
             Write-Error "Publish failed: web.config not found in publish folder."
           }
-          dir "${{ github.workspace }}\publish"
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: myAppVsc # Cambia por el nombre exacto de tu Web App en Azure
+          app-name: myAppVsc
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ${{ github.workspace }}/publish
 
