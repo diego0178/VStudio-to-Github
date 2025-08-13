@@ -11,33 +11,31 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # 1. Descargar código
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Configurar MSBuild
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v1
 
-      # 3. Restaurar NuGet
       - name: Restore NuGet packages
         run: nuget restore aspnet-get-started.sln
 
-      # 4. Crear carpeta publish
-      - name: Create publish folder
-        run: mkdir "${{ github.workspace }}\publish"
+      - name: Clean publish folder
+        run: |
+          if (Test-Path "$(System.DefaultWorkingDirectory)\publish") {
+            Remove-Item "$(System.DefaultWorkingDirectory)\publish" -Recurse -Force
+          }
 
-      # 5. Publicar en carpeta publish
-      - name: Publish web app
-        run: msbuild aspnet-get-started.sln /p:Configuration=Release /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:DeleteExistingFiles=True /p:publishUrl="${{ github.workspace }}\publish"
+      - name: Build and publish web project
+        run: msbuild aspnet-get-started/aspnet-get-started.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:PublishUrl="$(System.DefaultWorkingDirectory)\publish"
 
-      # 6. Desplegar a Azure
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: myAppVsc # Cambia por tu nombre exacto
+          app-name: myAppVsc  # Cambia por el nombre exacto de tu Web App en Azure
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ${{ github.workspace }}\publish
+          package: "$(System.DefaultWorkingDirectory)\publish"
+
 
 
 
