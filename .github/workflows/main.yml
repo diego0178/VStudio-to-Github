@@ -2,8 +2,7 @@ name: CI/CD ASP.NET MVC (Full .NET Framework) to Azure
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -20,24 +19,31 @@ jobs:
       - name: Restore NuGet packages
         run: nuget restore aspnet-get-started.sln
 
-      - name: Clean publish folder
+      # Limpiar y crear la carpeta de publicación en el runner (no en tu repo)
+      - name: Prepare publish folder
         run: |
-          if (Test-Path "${{ github.workspace }}\publish") {
-            Remove-Item "${{ github.workspace }}\publish" -Recurse -Force
-          }
+          Remove-Item -Recurse -Force .\publish -ErrorAction Ignore
+          New-Item -ItemType Directory -Path .\publish | Out-Null
 
+      # Publicar DIRECTO al proyecto web (.csproj), no al .sln
       - name: Build and publish web project
-        run: msbuild aspnet-get-started/aspnet-get-started.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:PublishUrl="${{ github.workspace }}\publish"
+        run: msbuild aspnet-get-started/aspnet-get-started.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:PublishUrl=publish
 
-      - name: List published files
-        run: Get-ChildItem -Path "${{ github.workspace }}\publish" -Recurse
+      # Verificar que realmente se generó salida (útil para diagnosticar el "No package found")
+      - name: Verify publish output
+        run: |
+          dir .\publish
+          if (!(Test-Path ".\publish\web.config")) { Write-Error "Publish falló: no se encontró web.config en .\publish"; }
+          if (!(Test-Path ".\publish\bin")) { Write-Error "Publish incompleto: no se encontró la carpeta bin en .\publish"; }
 
+      # Desplegar la CARPETA publish (relativa al workspace)
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: myAppVsc # Cambia por el nombre exacto de tu Web App en Azure
+          app-name: myAppVsc
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ${{ github.workspace }}/publish
+          package: publish
+
 
 
 
