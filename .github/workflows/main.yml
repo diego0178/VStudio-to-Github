@@ -22,19 +22,19 @@ jobs:
 
       - name: Clean publish folder
         run: |
-          if (Test-Path "$(System.DefaultWorkingDirectory)/publish") {
-            Remove-Item "$(System.DefaultWorkingDirectory)/publish" -Recurse -Force
+          if (Test-Path "${{ github.workspace }}/publish") {
+            Remove-Item "${{ github.workspace }}/publish" -Recurse -Force
           }
 
       - name: Build and publish web project
-        run: msbuild aspnet-get-started/aspnet-get-started.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:PublishUrl="$(System.DefaultWorkingDirectory)/publish"
+        run: msbuild aspnet-get-started/aspnet-get-started.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:PublishUrl="${{ github.workspace }}/publish"
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: myAppVsc  # Cambia por el nombre exacto de tu Web App en Azure
+          app-name: myAppVsc # Cambia por el nombre exacto de tu Web App en Azure
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: "$(System.DefaultWorkingDirectory)/publish"
+          package: "${{ github.workspace }}/publish"
 
 
 
